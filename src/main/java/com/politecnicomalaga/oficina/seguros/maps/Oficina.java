@@ -1,7 +1,11 @@
 package com.politecnicomalaga.oficina.seguros.maps;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -14,8 +18,9 @@ public class Oficina {
     private String direccion;
     private String telefono;
     private String email;
+    private int orden;
 
-    List<Cliente> misClientes = new ArrayList<Cliente>();
+    Map<String, Cliente> misClientes = new HashMap<>();
 
     public Oficina() {
     }
@@ -41,9 +46,8 @@ public class Oficina {
         } else {
             return;
         }
-
         //Después de 0 a n tratamientos
-        this.misClientes = new ArrayList<>();
+        this.misClientes = new HashMap<>();
 
         String[] clientesPosibles = sCSV.split("Cliente");
         String miClienteCSV;
@@ -51,7 +55,7 @@ public class Oficina {
         for (int i = 1; i < clientesPosibles.length; i++) {
             miClienteCSV = "Cliente" + clientesPosibles[i];
             Cliente c = new Cliente(miClienteCSV);
-            misClientes.add(c);
+            misClientes.put(c.getDni(), c);
         }
     }
 
@@ -76,15 +80,14 @@ public class Oficina {
             return false;
         }
 
-        for (Cliente c : misClientes) {
-            //Si el dni introducido ya pertenece a un cliente, da error y no se crea el cliente.
-            if (c.getDni().equals(c.getDni())) {
+        for (Cliente c : misClientes.values()) {
+            // Si el dni introducido ya pertenece a un cliente, da error y no se crea el cliente.
+            if (c.getDni().equals(cliente.getDni())) {
                 return false;
             }
         }
-        this.misClientes.add(cliente);
+        misClientes.put(cliente.getDni(), cliente);
         return true;
-
     }
 
     public boolean eliminaCliente(String dni) {
@@ -96,7 +99,7 @@ public class Oficina {
         while (!found && i < misClientes.size()) {
             Cliente cliente = misClientes.get(i);
             if (cliente.getDni().equals(dni)) {
-                if (c.getMisIncidencias().isEmpty()){
+                if (c.getMisIncidencias().isEmpty()) {
                     found = true;
                     misClientes.remove(cliente);
                     return true;
@@ -128,25 +131,21 @@ public class Oficina {
     }
 
     public Cliente buscaUnCliente(String dni) {
-
-        for (Cliente p : misClientes) {
+        for (Cliente p : misClientes.values()) {
             if (p.compara(dni, Cliente.AtributosCliente.DNI)) {
                 return p;
             }
         }
-
         return null;
     }
 
     public Cliente[] buscaClientes(String campoBusqueda, Cliente.AtributosCliente atributoBusqueda) {
         ArrayList<Cliente> resultado = new ArrayList<>();
-
-        for (Cliente p : misClientes) {
+        for (Cliente p : misClientes.values()) {
             if (p.compara(campoBusqueda, atributoBusqueda)) {
                 resultado.add(p);
             }
         }
-
         if (resultado.size() > 0) {
             Cliente[] listaP = new Cliente[resultado.size()];
             return resultado.toArray(listaP);
@@ -156,7 +155,7 @@ public class Oficina {
 
     public Cliente[] buscarClientesApellidos(String apellidos) {
         List<Cliente> clientesEncontrados = new ArrayList<>();
-        for (Cliente cliente : misClientes) {
+        for (Cliente cliente : misClientes.values()) {
             if (cliente.getApellidos().equals(apellidos)) {
                 clientesEncontrados.add(cliente);
             }
@@ -165,13 +164,42 @@ public class Oficina {
     }
 
     //Listar todos los clientes
-    public Cliente[] todosClientes() {
+    /* public Cliente[] todosClientes() {
         Cliente[] arrayClientes = new Cliente[misClientes.size()];
         if (misClientes.size() == 0) {
             return null;
         }
         Cliente[] listaCli = new Cliente[misClientes.size()];
         return misClientes.toArray(listaCli);
+    }*/
+    public Cliente[] todosClientes() {
+
+        if (misClientes.size() == 0) {
+            return null;
+        }
+
+        switch (orden) {
+
+            case 0:
+                ArrayList<Cliente> clientesOrdenadosNombre = new ArrayList<>(misClientes.values());
+                Collections.sort(clientesOrdenadosNombre, new ClienteComparadorApellNom());
+                return clientesOrdenadosNombre.toArray(new Cliente[clientesOrdenadosNombre.size()]);
+
+            case 1:
+                ArrayList<Cliente> clientesOrdenadosDNI = new ArrayList<>(misClientes.values());
+                Collections.sort(clientesOrdenadosDNI, new ClienteComparadorDni());
+                return clientesOrdenadosDNI.toArray(new Cliente[clientesOrdenadosDNI.size()]);
+
+            case 2:
+                ArrayList<Cliente> clientesOrdenadosApellNom = new ArrayList<>(misClientes.values());
+                Collections.sort(clientesOrdenadosApellNom, new ClienteComparadorApellNom());
+                return clientesOrdenadosApellNom.toArray(new Cliente[clientesOrdenadosApellNom.size()]);
+
+            default:
+                // orden desconocido, devolver todos los clientes sin ordenar
+                return misClientes.values().toArray(new Cliente[misClientes.size()]);
+
+        }
     }
 
     public boolean actualizaCliente(String dni, String campo, Cliente.AtributosCliente atrActualizar) {
@@ -223,19 +251,23 @@ public class Oficina {
         this.email = email;
     }
 
-    public List<Cliente> getMisClientes() {
+    public Map<String, Cliente> getMisClientes() {
         return misClientes;
     }
 
-    public void setMisClientes(List<Cliente> misClientes) {
+    public void setMisClientes(Map<String, Cliente> misClientes) {
         this.misClientes = misClientes;
     }
 
     public String toCSV() {
         String cadena = String.format("Oficina;%s;%s;%s;%s;%s\n", codOfi, nombre, direccion, telefono, email);
-        for (Cliente c : this.misClientes) {
+        if (misClientes.isEmpty()) {
+            return cadena;
+        }
+        for (Cliente c : misClientes.values()) {
             cadena += c.toCSV();
         }
         return cadena;
     }
+
 }

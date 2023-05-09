@@ -30,7 +30,6 @@ public class Cliente {
     private int numIncidencias = 1;
 
     private Map<String, Incidencia> misIncidencias;
-    List<Incidencia> misIncidenciasCSV = new ArrayList<Incidencia>();
 
 
     public Cliente(String dni, String codPoliza, String nombre, String apellidos, String direccion, String email, String telefono) {
